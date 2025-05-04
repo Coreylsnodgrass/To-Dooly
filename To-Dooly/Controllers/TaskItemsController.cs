@@ -1,164 +1,195 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using ToDooly.Models.Entities;
+using ToDooly.Models.ViewModels;
 using ToDooly.Services;
 
 namespace ToDooly.Controllers
 {
+    [Authorize]
     public class TaskItemsController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ApplicationDbContext _db;
+        private readonly UserManager<IdentityUser> _um;
 
-        public TaskItemsController(ApplicationDbContext context)
+        public TaskItemsController(ApplicationDbContext db, UserManager<IdentityUser> um)
         {
-            _context = context;
+            _db = db;
+            _um = um;
         }
 
-        // GET: TaskItems
-        public async Task<IActionResult> Index()
+        // ──────────────────────────────────────────────────────────────────────
+        // LIST  ( /TaskItems?projectId=# )
+        // ──────────────────────────────────────────────────────────────────────
+        public async Task<IActionResult> Index(int? projectId)
         {
-            var applicationDbContext = _context.TaskItems.Include(t => t.Project);
-            return View(await applicationDbContext.ToListAsync());
+            var uid = _um.GetUserId(User);
+            var query = _db.TaskItems
+                           .Include(t => t.Project)
+                           .Include(t => t.TaskLabels)
+                              .ThenInclude(tl => tl.Label)
+                           .Where(t => t.Project.OwnerId == uid);
+
+            if (projectId.HasValue)
+                query = query.Where(t => t.ProjectId == projectId.Value);
+
+            return View(await query.ToListAsync());
         }
 
-        // GET: TaskItems/Details/5
-        public async Task<IActionResult> Details(int? id)
+        // ──────────────────────────────────────────────────────────────────────
+        // CREATE  (GET + POST)
+        // ──────────────────────────────────────────────────────────────────────
+        public async Task<IActionResult> Create(int projectId)
         {
-            if (id == null)
+            var uid = _um.GetUserId(User);
+            var labels = await _db.Labels
+                                  .Where(l => l.OwnerId == uid)
+                                  .OrderBy(l => l.Name)
+                                  .ToListAsync();
+
+            var vm = new TaskItemEditViewModel
             {
-                return NotFound();
+                ProjectId = projectId,
+                DueDate = DateTime.Today,
+                AllLabels = new MultiSelectList(labels, "Id", "Name")
+            };
+            return View(vm);
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(TaskItemEditViewModel vm)
+        {
+            var uid = _um.GetUserId(User);
+            if (!ModelState.IsValid)
+            {
+                vm.AllLabels = new MultiSelectList(
+                    await _db.Labels.Where(l => l.OwnerId == uid)
+                                    .OrderBy(l => l.Name)
+                                    .ToListAsync(),
+                    "Id", "Name", vm.SelectedLabelIds);
+                return View(vm);
             }
 
-            var taskItem = await _context.TaskItems
-                .Include(t => t.Project)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (taskItem == null)
+            var task = new TaskItem
             {
-                return NotFound();
-            }
+                ProjectId = vm.ProjectId,
+                Title = vm.Title,
+                Description = vm.Description,
+                DueDate = vm.DueDate,
+                Priority = vm.Priority,
+                IsComplete = vm.IsComplete
+            };
+            _db.TaskItems.Add(task);
+            await _db.SaveChangesAsync();
 
-            return View(taskItem);
+            foreach (var lid in vm.SelectedLabelIds)
+                _db.TaskLabels.Add(new TaskLabel { TaskItemId = task.Id, LabelId = lid });
+            await _db.SaveChangesAsync();
+
+            return RedirectToAction("Details", "Projects", new { id = vm.ProjectId });
         }
 
-        // GET: TaskItems/Create
-        public IActionResult Create()
-        {
-            ViewData["ProjectId"] = new SelectList(_context.Projects, "Id", "Title");
-            return View();
-        }
-
-        // POST: TaskItems/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Title,Description,DueDate,Priority,IsComplete,ProjectId")] TaskItem taskItem)
-        {
-            if (ModelState.IsValid)
-            {
-                _context.Add(taskItem);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            ViewData["ProjectId"] = new SelectList(_context.Projects, "Id", "Title", taskItem.ProjectId);
-            return View(taskItem);
-        }
-
-        // GET: TaskItems/Edit/5
+        // ──────────────────────────────────────────────────────────────────────
+        // EDIT  (GET)
+        // ──────────────────────────────────────────────────────────────────────
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
+            var uid = _um.GetUserId(User);
 
-            var taskItem = await _context.TaskItems.FindAsync(id);
-            if (taskItem == null)
+            var task = await _db.TaskItems
+                                .Include(t => t.Project)
+                                .Include(t => t.TaskLabels)
+                                .FirstOrDefaultAsync(t => t.Id == id &&
+                                                          t.Project.OwnerId == uid);
+            if (task == null) return NotFound();
+
+            var vm = new TaskItemEditViewModel
             {
-                return NotFound();
-            }
-            ViewData["ProjectId"] = new SelectList(_context.Projects, "Id", "Title", taskItem.ProjectId);
-            return View(taskItem);
+                Id = task.Id,
+                ProjectId = task.ProjectId,
+                Title = task.Title,
+                Description = task.Description,
+                DueDate = task.DueDate,
+                Priority = task.Priority,
+                IsComplete = task.IsComplete,
+                SelectedLabelIds = task.TaskLabels.Select(tl => tl.LabelId).ToList()
+            };
+            var labels = await _db.Labels.Where(l => l.OwnerId == uid)
+                                         .OrderBy(l => l.Name)
+                                         .ToListAsync();
+            vm.AllLabels = new MultiSelectList(labels, "Id", "Name", vm.SelectedLabelIds);
+            return View(vm);
         }
 
-        // POST: TaskItems/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Description,DueDate,Priority,IsComplete,ProjectId")] TaskItem taskItem)
+        // ──────────────────────────────────────────────────────────────────────
+        // EDIT  (POST)
+        // ──────────────────────────────────────────────────────────────────────
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(TaskItemEditViewModel vm)
         {
-            if (id != taskItem.Id)
+            var uid = _um.GetUserId(User);
+
+            if (!ModelState.IsValid)
             {
-                return NotFound();
+                vm.AllLabels = new MultiSelectList(
+                    await _db.Labels.Where(l => l.OwnerId == uid)
+                                    .OrderBy(l => l.Name)
+                                    .ToListAsync(),
+                    "Id", "Name", vm.SelectedLabelIds);
+                return View(vm);
             }
 
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(taskItem);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!TaskItemExists(taskItem.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            ViewData["ProjectId"] = new SelectList(_context.Projects, "Id", "Title", taskItem.ProjectId);
-            return View(taskItem);
+            var task = await _db.TaskItems
+                                .Include(t => t.Project)
+                                .Include(t => t.TaskLabels)
+                                .FirstOrDefaultAsync(t => t.Id == vm.Id &&
+                                                          t.Project.OwnerId == uid);
+            if (task == null) return NotFound();
+
+            task.Title = vm.Title;
+            task.Description = vm.Description;
+            task.DueDate = vm.DueDate;
+            task.Priority = vm.Priority;
+            task.IsComplete = vm.IsComplete;
+
+            _db.TaskLabels.RemoveRange(task.TaskLabels);
+            foreach (var lid in vm.SelectedLabelIds)
+                _db.TaskLabels.Add(new TaskLabel { TaskItemId = task.Id, LabelId = lid });
+
+            await _db.SaveChangesAsync();
+
+            // back to the project that owns this task
+            return RedirectToAction("Details", "Projects", new { id = task.ProjectId });
         }
 
-        // GET: TaskItems/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var taskItem = await _context.TaskItems
-                .Include(t => t.Project)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (taskItem == null)
-            {
-                return NotFound();
-            }
-
-            return View(taskItem);
-        }
-
-        // POST: TaskItems/Delete/5
+        // ──────────────────────────────────────────────────────────────────────
+        // DELETE  (POST – from stand‑alone TaskItems list)
+        // ──────────────────────────────────────────────────────────────────────
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var taskItem = await _context.TaskItems.FindAsync(id);
-            if (taskItem != null)
-            {
-                _context.TaskItems.Remove(taskItem);
-            }
+            var uid = _um.GetUserId(User);
 
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
+            var task = await _db.TaskItems
+                                .Include(t => t.Project)
+                                .FirstOrDefaultAsync(t => t.Id == id &&
+                                                          t.Project.OwnerId == uid);
+            if (task == null)            // silently ignore
+                return RedirectToAction(nameof(Index));
 
-        private bool TaskItemExists(int id)
-        {
-            return _context.TaskItems.Any(e => e.Id == id);
+            var projectId = task.ProjectId;
+            _db.TaskItems.Remove(task);
+            await _db.SaveChangesAsync();
+
+            return RedirectToAction("Details", "Projects", new { id = projectId });
         }
     }
 }

@@ -17,10 +17,20 @@
                 <td>@t.DueDate.ToString("yyyy-MM-dd")</td>
                 <td>@t.Priority</td>
                 <td>
-                    <button class="btn btn-sm btn-danger delete-task">Delete</button>
+                    <a asp-controller="TaskItems"
+                       asp-action="Edit"
+                       asp-route-id="@t.Id"
+                       class="btn btn-sm btn-secondary me-1">
+                        Edit
+                    </a>
+                    <button type="button"
+                            class="btn btn-sm btn-danger delete-task">
+                        Delete
+                    </button>
                 </td>
             </tr>
         }
     </tbody>
 </table>
-<span id="delete-error" class="text-danger"></span>
+
+<span class="delete-error text-danger"></span>

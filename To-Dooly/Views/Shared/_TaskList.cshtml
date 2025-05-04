@@ -1,11 +1,12 @@
 ﻿@model IEnumerable<ToDooly.Models.Entities.TaskItem>
 
-<table class="table table-hover">
+<table class="table">
     <thead>
         <tr>
             <th></th>
             <th>Title</th>
-            <th>Due Date</th>
+            <th>Labels</th>
+            <th>Due&nbsp;Date</th>
             <th>Priority</th>
             <th></th>
         </tr>
@@ -14,17 +15,29 @@
         @foreach (var t in Model)
         {
             <tr data-task-id="@t.Id">
-                <td>
-                    <input type="checkbox" class="toggle-complete" />
-                </td>
+                <td><input type="checkbox" class="toggle-complete" /></td>
                 <td>@t.Title</td>
+                <td>
+                    @(t.TaskLabels.Any()
+                        ? string.Join(", ", t.TaskLabels.Select(l => l.Label.Name))
+                        : "")
+                </td>
                 <td>@t.DueDate.ToString("yyyy-MM-dd")</td>
                 <td>@t.Priority</td>
                 <td>
-                    <button class="btn btn-sm btn-danger delete-task">Delete</button>
+                    <a asp-controller="TaskItems"
+                       asp-action="Edit"
+                       asp-route-id="@t.Id"
+                       class="btn btn-sm btn-secondary me-1">Edit</a>
+
+                    <button type="button"
+                            class="btn btn-sm btn-danger delete-task">
+                        Delete
+                    </button>
                 </td>
             </tr>
         }
     </tbody>
 </table>
-<span id="toggle-error" class="text-danger"></span>
+
+<span class="delete-error text-danger"></span>

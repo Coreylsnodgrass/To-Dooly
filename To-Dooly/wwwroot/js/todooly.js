@@ -1,87 +1,62 @@
-﻿document.addEventListener("DOMContentLoaded", () => {
-    const form = document.getElementById("create-task-form");
-    const inContainer = document.getElementById("task-list-container");
-    const compContainer = document.getElementById("completed-task-list-container");
-    const projectId = Number(form.querySelector('input[name="projectId"]').value);
+﻿// wwwroot/js/todooly.js
 
-    // helper to reload both open & completed task lists
-    async function reloadLists() {
-        const [incHtml, compHtml] = await Promise.all([
-            fetch(`/Projects/TaskList?projectId=${projectId}`).then(r => r.text()),
-            fetch(`/Projects/CompletedTaskList?projectId=${projectId}`).then(r => r.text())
-        ]);
-        inContainer.innerHTML = incHtml;
-        compContainer.innerHTML = compHtml;
+document.addEventListener("DOMContentLoaded", () => {
+  const inContainer   = document.getElementById("task-list-container");
+  const compContainer = document.getElementById("completed-task-list-container");
+  const projectId     = Number(document.getElementById("ProjectId")?.value || 0);
+
+  async function reloadLists() {
+    const [openHtml, compHtml] = await Promise.all([
+      fetch(`/Projects/TaskList?projectId=${projectId}`).then(r => r.text()),
+      fetch(`/Projects/CompletedTaskList?projectId=${projectId}`).then(r => r.text())
+    ]);
+    if (inContainer)   inContainer.innerHTML   = openHtml;
+    if (compContainer) compContainer.innerHTML = compHtml;
+  }
+
+  document.body.addEventListener("click", async e => {
+    // Toggle complete
+    if (e.target.matches(".toggle-complete")) {
+      const tr = e.target.closest("tr");
+      const id = tr.dataset.taskId;
+      document.querySelectorAll(".delete-error")
+              .forEach(el => el.textContent = "");
+      const resp = await fetch(`/api/tasks/${id}`, {
+        method: "PUT",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isComplete: e.target.checked })
+      });
+      if (!resp.ok) {
+        e.target.checked = !e.target.checked;
+      } else {
+        await reloadLists();
+      }
+      return;
     }
 
-    // Create new task via AJAX
-    form?.addEventListener("submit", async e => {
-        e.preventDefault();
+      if (e.target.matches(".delete-task")) {
+          e.preventDefault();
 
-        const fd = new FormData(form);
-        const payload = {
-            projectId: projectId,
-            title: fd.get("title"),
-            description: null,               // add if you include a description field
-            dueDate: fd.get("dueDate"),
-            priority: Number(fd.get("priority"))
-        };
+          const tr = e.target.closest("tr");
+          const id = tr?.dataset.taskId;
+          if (!id) return;                       
 
-        const resp = await fetch("/api/tasks", {
-            method: "POST",
-            credentials: "same-origin",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
+          const err = document.querySelector(".delete-error");
+          if (err) err.textContent = "";
 
-        if (!resp.ok) {
-            console.error(await resp.json());
-            document.getElementById("create-task-error").textContent = "Could not save.";
-            return;
-        }
+          const resp = await fetch(`/api/tasks/${id}`, {
+              method: "DELETE",
+              credentials: "same-origin"         
+          });
 
-        form.reset();
-        await reloadLists();
-    });
-
-    // Delegate clicks for both toggling complete and deleting
-    document.body.addEventListener("click", async e => {
-        // 1) Mark complete
-        if (e.target.matches(".toggle-complete")) {
-            const tr = e.target.closest("tr");
-            const id = tr.getAttribute("data-task-id");
-
-            const resp = await fetch(`/api/tasks/${id}`, {
-                method: "PUT",
-                credentials: "same-origin",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ isComplete: true })
-            });
-
-            if (!resp.ok) {
-                document.getElementById("toggle-error").textContent = "Could not complete.";
-                return;
-            }
-            await reloadLists();
-            return;
-        }
-
-        // 2) Delete task
-        if (e.target.matches(".delete-task")) {
-            const tr = e.target.closest("tr");
-            const id = tr.getAttribute("data-task-id");
-
-            const resp = await fetch(`/api/tasks/${id}`, {
-                method: "DELETE",
-                credentials: "same-origin"
-            });
-
-            if (!resp.ok) {
-                document.getElementById("delete-error").textContent = "Could not delete.";
-                return;
-            }
-            await reloadLists();
-            return;
-        }
-    });
+          if (resp.ok) {
+              await reloadLists();
+          } else {
+              if (err) err.textContent = "Could not delete task.";
+              console.error(await resp.text());
+          }
+          return;
+      }
+  });
 });

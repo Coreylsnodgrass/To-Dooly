@@ -8,13 +8,13 @@ namespace ToDooly.Controllers
     [Authorize]
     public class DashboardController : Controller
     {
-        private readonly ApplicationDbContext _db;
-        public DashboardController(ApplicationDbContext db) => _db = db;
+        private readonly ApplicationDbContext _context;
+        public DashboardController(ApplicationDbContext db) => _context = db;
 
         public async Task<IActionResult> Index()
         {
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier).Value;
-            var tasks = _db.TaskItems.Where(t => t.Project.OwnerId == userId);
+            var tasks = _context.TaskItems.Where(t => t.Project.OwnerId == userId);
             var total = await tasks.CountAsync();
             var completed = await tasks.CountAsync(t => t.IsComplete);
             var dueSoon = await tasks
