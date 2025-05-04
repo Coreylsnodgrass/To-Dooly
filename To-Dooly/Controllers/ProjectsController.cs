@@ -38,9 +38,11 @@ namespace ToDooly.Controllers
 
             var uid = _um.GetUserId(User);
             var project = await _db.Projects
-                                   .FirstOrDefaultAsync(p => p.Id == id && p.OwnerId == uid);
-            if (project == null) return NotFound();
+                .Include(p => p.Tasks)                            
+                .Where(p => p.Id == id && p.OwnerId == uid)       
+                .FirstOrDefaultAsync();
 
+            if (project == null) return NotFound();
             return View(project);
         }
 
@@ -52,8 +54,10 @@ namespace ToDooly.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Title,Description")] Project project)
         {
-            if (!ModelState.IsValid) return View(project);
+            if (!ModelState.IsValid)
+                return View(project);
 
+            // set to the currently‐logged‐in user
             project.OwnerId = _um.GetUserId(User);
             _db.Projects.Add(project);
             await _db.SaveChangesAsync();
@@ -88,9 +92,7 @@ namespace ToDooly.Controllers
 
             project.Title = updated.Title;
             project.Description = updated.Description;
-            _db.Projects.Update(project);
             await _db.SaveChangesAsync();
-
             return RedirectToAction(nameof(Index));
         }
 
@@ -101,22 +103,32 @@ namespace ToDooly.Controllers
 
             var uid = _um.GetUserId(User);
             var project = await _db.Projects
-                                   .FirstOrDefaultAsync(p => p.Id == id && p.OwnerId == uid);
+                .Include(p => p.Tasks)
+                .FirstOrDefaultAsync(p => p.Id == id && p.OwnerId == uid);
+
             if (project == null) return NotFound();
+
+            var owner = await _um.FindByIdAsync(project.OwnerId);
+            ViewBag.OwnerName = owner?.UserName ?? "(unknown)";
 
             return View(project);
         }
 
-        // POST: /Projects/Delete/5
+        // POST: Projects/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var uid = _um.GetUserId(User);
             var project = await _db.Projects
-                                   .FirstOrDefaultAsync(p => p.Id == id && p.OwnerId == uid);
+                .Include(p => p.Tasks)
+                .FirstOrDefaultAsync(p => p.Id == id && p.OwnerId == uid);
+
             if (project != null)
             {
+                // If you don't have cascade‐delete on Tasks, remove them manually:
+                _db.TaskItems.RemoveRange(project.Tasks);
+
                 _db.Projects.Remove(project);
                 await _db.SaveChangesAsync();
             }
@@ -129,10 +141,23 @@ namespace ToDooly.Controllers
         {
             var uid = _um.GetUserId(User);
             var tasks = await _db.TaskItems
-                                 .Where(t => t.ProjectId == projectId
-                                          && t.Project.OwnerId == uid)
-                                 .ToListAsync();
+                .Where(t => t.ProjectId == projectId
+                         && t.Project.OwnerId == uid
+                         && !t.IsComplete)    // <-- filter INCOMPLETE only
+                .ToListAsync();
             return PartialView("_TaskList", tasks);
+        }
+
+        [HttpGet]
+        public async Task<PartialViewResult> CompletedTaskList(int projectId)
+        {
+            var uid = _um.GetUserId(User);
+            var tasks = await _db.TaskItems
+                .Where(t => t.ProjectId == projectId
+                         && t.Project.OwnerId == uid
+                         && t.IsComplete)     // <-- filter COMPLETE only
+                .ToListAsync();
+            return PartialView("_CompletedTaskList", tasks);
         }
     }
 }

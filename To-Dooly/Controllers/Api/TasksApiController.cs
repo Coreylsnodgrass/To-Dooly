@@ -80,7 +80,7 @@ namespace ToDooly.Controllers.Api
 
         // PUT: api/tasks/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] CreateTaskDto dto)
+        public async Task<IActionResult> Put(int id, [FromBody] UpdateTaskStatusDto dto)
         {
             var uid = _um.GetUserId(User);
             var existing = await _db.TaskItems
@@ -88,10 +88,7 @@ namespace ToDooly.Controllers.Api
                                     .FirstOrDefaultAsync(t => t.Id == id && t.Project.OwnerId == uid);
             if (existing == null) return NotFound();
 
-            existing.Title = dto.Title;
-            existing.Description = dto.Description;
-            existing.DueDate = dto.DueDate;
-            existing.Priority = dto.Priority;
+            existing.IsComplete = dto.IsComplete;
             // keep existing.IsComplete unchanged here
 
             await _db.SaveChangesAsync();
