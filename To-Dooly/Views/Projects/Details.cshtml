@@ -1,16 +1,17 @@
 ﻿@model ToDooly.Models.Entities.Project
 
 @{
-    ViewData["Title"] = "Details";
+    ViewData["Title"] = "Project Tasks";
 }
 
-<h1>Details</h1>
-@* Keep a ProjectId input on the page for AJAX *@
+<h1 class="text-center">Project Tasks</h1>
 <input type="hidden" id="ProjectId" value="@Model.Id" />
 <div>
-    <h4>Project</h4>
+   
     <hr />
     <dl class="row">
+        <h4>Project Information</h4>
+
         <dt class="col-sm-2">@Html.DisplayNameFor(m => m.Title)</dt>
         <dd class="col-sm-10">@Html.DisplayFor(m => m.Title)</dd>
 
