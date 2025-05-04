@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Humanizer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -82,7 +83,7 @@ namespace ToDooly.Controllers
                 Title = vm.Title,
                 Description = vm.Description,
                 DueDate = vm.DueDate,
-                Priority = vm.Priority,
+                Priority = (PriorityLevel)vm.Priority,
                 IsComplete = vm.IsComplete
             };
             _db.TaskItems.Add(task);
@@ -117,7 +118,7 @@ namespace ToDooly.Controllers
                 Title = task.Title,
                 Description = task.Description,
                 DueDate = task.DueDate,
-                Priority = task.Priority,
+                Priority = (PriorityLevel)task.Priority,
                 IsComplete = task.IsComplete,
                 SelectedLabelIds = task.TaskLabels.Select(tl => tl.LabelId).ToList()
             };
@@ -156,7 +157,7 @@ namespace ToDooly.Controllers
             task.Title = vm.Title;
             task.Description = vm.Description;
             task.DueDate = vm.DueDate;
-            task.Priority = vm.Priority;
+            task.Priority = (PriorityLevel)vm.Priority;
             task.IsComplete = vm.IsComplete;
 
             _db.TaskLabels.RemoveRange(task.TaskLabels);

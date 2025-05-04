@@ -15,7 +15,7 @@ namespace ToDooly.Models.Entities
         [Required, DataType(DataType.Date)]
         public DateTime DueDate { get; set; }
 
-        public int Priority { get; set; }
+        public PriorityLevel Priority { get; set; }
 
         public bool IsComplete { get; set; }
 

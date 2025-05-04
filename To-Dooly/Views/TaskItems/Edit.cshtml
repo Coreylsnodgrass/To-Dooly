@@ -1,4 +1,6 @@
 ﻿@model ToDooly.Models.ViewModels.TaskItemEditViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using ToDooly.Models.Entities
 
 @{
     ViewData["Title"] = "Edit Task";
@@ -31,9 +33,13 @@
     </div>
 
     <div class="mb-3">
-        <label asp-for="Priority" class="form-label"></label>
-        <input asp-for="Priority" type="number" min="1" max="5" class="form-control" />
-        <span asp-validation-for="Priority" class="text-danger"></span>
+    <label asp-for="Priority" class="form-label"></label>
+    <select asp-for="Priority"
+            asp-items="Html.GetEnumSelectList<ToDooly.Models.Entities.PriorityLevel>()"
+            class="form-select">
+        <option value="">-- select priority --</option>
+    </select>
+    <span asp-validation-for="Priority" class="text-danger"></span>
     </div>
 
     <div class="form-check mb-3">
