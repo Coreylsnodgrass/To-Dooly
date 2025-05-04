@@ -15,12 +15,12 @@ namespace ToDooly.Controllers.Api
     [Authorize]
     public class TasksApiController : ControllerBase
     {
-        private readonly ApplicationDbContext _db;
+        private readonly ApplicationDbContext _context;
         private readonly UserManager<IdentityUser> _um;
 
         public TasksApiController(ApplicationDbContext db, UserManager<IdentityUser> um)
         {
-            _db = db;
+            _context = db;
             _um = um;
         }
 
@@ -29,7 +29,7 @@ namespace ToDooly.Controllers.Api
         public async Task<IActionResult> Get([FromQuery] int? projectId)
         {
             var uid = _um.GetUserId(User);
-            var query = _db.TaskItems
+            var query = _context.TaskItems
                            .Include(t => t.Project)
                            .Where(t => t.Project.OwnerId == uid);
 
@@ -45,7 +45,7 @@ namespace ToDooly.Controllers.Api
         public async Task<IActionResult> Get(int id)
         {
             var uid = _um.GetUserId(User);
-            var task = await _db.TaskItems
+            var task = await _context.TaskItems
                                 .Include(t => t.Project)
                                 .FirstOrDefaultAsync(t => t.Id == id && t.Project.OwnerId == uid);
 
@@ -58,7 +58,7 @@ namespace ToDooly.Controllers.Api
         public async Task<IActionResult> Post([FromBody] CreateTaskDto dto)
         {
             var uid = _um.GetUserId(User);
-            var project = await _db.Projects
+            var project = await _context.Projects
                                    .FirstOrDefaultAsync(p => p.Id == dto.ProjectId && p.OwnerId == uid);
             if (project == null)
                 return BadRequest("Invalid project ID");
@@ -73,25 +73,24 @@ namespace ToDooly.Controllers.Api
                 IsComplete = false
             };
 
-            _db.TaskItems.Add(task);
-            await _db.SaveChangesAsync();
+            _context.TaskItems.Add(task);
+            await _context.SaveChangesAsync();
             return CreatedAtAction(nameof(Get), new { id = task.Id }, task);
         }
 
         // PUT: api/tasks/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] UpdateTaskStatusDto dto)
+        public async Task<IActionResult> Put(int id, [FromBody] TaskUpdateDto dto)
         {
             var uid = _um.GetUserId(User);
-            var existing = await _db.TaskItems
+            var existing = await _context.TaskItems
                                     .Include(t => t.Project)
                                     .FirstOrDefaultAsync(t => t.Id == id && t.Project.OwnerId == uid);
             if (existing == null) return NotFound();
 
             existing.IsComplete = dto.IsComplete;
-            // keep existing.IsComplete unchanged here
-
-            await _db.SaveChangesAsync();
+            _context.TaskItems.Update(existing);
+            await _context.SaveChangesAsync();
             return NoContent();
         }
 
@@ -100,13 +99,13 @@ namespace ToDooly.Controllers.Api
         public async Task<IActionResult> Delete(int id)
         {
             var uid = _um.GetUserId(User);
-            var existing = await _db.TaskItems
+            var existing = await _context.TaskItems
                                     .Include(t => t.Project)
                                     .FirstOrDefaultAsync(t => t.Id == id && t.Project.OwnerId == uid);
             if (existing == null) return NotFound();
 
-            _db.TaskItems.Remove(existing);
-            await _db.SaveChangesAsync();
+            _context.TaskItems.Remove(existing);
+            await _context.SaveChangesAsync();
             return NoContent();
         }
     }

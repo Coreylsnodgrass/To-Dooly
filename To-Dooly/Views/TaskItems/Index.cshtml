@@ -1,65 +1,72 @@
 ﻿@model IEnumerable<ToDooly.Models.Entities.TaskItem>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Tasks";
 }
 
-<h1>Index</h1>
+<h1>Tasks</h1>
+
+@{
+    var pidString = ViewContext.HttpContext.Request.Query["projectId"].FirstOrDefault();
+    int.TryParse(pidString, out var pId);
+}
+
+@if (pId != 0)
+{
+    <p>Showing tasks for project #@pId</p>
+}
 
 <p>
-    <a asp-action="Create">Create New</a>
+    <a asp-action="Create"
+       asp-route-projectId="@pId"
+       class="btn btn-success">
+        Create New Task
+    </a>
 </p>
+
 <table class="table">
     <thead>
         <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Title)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Description)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.DueDate)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Priority)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.IsComplete)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Project)
-            </th>
+            <th>Title</th>
+            <th>Labels</th>
+            <th>Project</th>
+            <th>Due Date</th>
+            <th>Priority</th>
             <th></th>
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Title)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Description)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.DueDate)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Priority)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.IsComplete)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Project.Title)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
+        @foreach (var task in Model)
+        {
+            <tr>
+                <td>@task.Title</td>
+                <td>
+                    @if (task.TaskLabels?.Any() ?? false)
+                    {
+                        @string.Join(", ", task.TaskLabels.Select(tl => tl.Label.Name))
+                    }
+                </td>
+                <td>@task.Project.Title</td>
+                <td>@task.DueDate.ToString("yyyy-MM-dd")</td>
+                <td>@task.Priority</td>
+                <td>
+                    <a asp-action="Edit"
+                       asp-route-id="@task.Id"
+                       class="btn btn-sm btn-secondary">
+                        Edit
+                    </a>
+                    <form asp-action="Delete"
+                          asp-route-id="@task.Id"
+                          asp-route-projectId="@pId"
+                          method="post"
+                          class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-danger">
+                            Delete
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        }
     </tbody>
 </table>

@@ -6,13 +6,15 @@
 
 <h1>Projects</h1>
 
-<p><a asp-action="Create" class="btn btn-primary">Create New</a></p>
+<p>
+    <a asp-action="Create" class="btn btn-success btn-lg me-2">New Project</a>
+</p>
 
 <table class="table">
     <thead>
         <tr>
-            <th>@Html.DisplayNameFor(m => m.First().Title)</th>
-            <th>@Html.DisplayNameFor(m => m.First().Description)</th>
+            <th>Title</th>
+            <th>Description</th>
             <th></th>
         </tr>
     </thead>
@@ -23,9 +25,27 @@
                 <td>@item.Title</td>
                 <td>@item.Description</td>
                 <td>
-                    <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                    <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                    <div class="btn-group" role="group">
+                        <a asp-controller="Projects"
+                           asp-action="Details"
+                           asp-route-id="@item.Id"
+                           class="btn btn-sm btn-primary">
+                            Tasks
+                        </a>
+                        <a asp-action="Edit"
+                           asp-route-id="@item.Id"
+                           class="btn btn-sm btn-secondary">
+                            Edit
+                        </a>
+                        <form asp-action="Delete"
+                              asp-route-id="@item.Id"
+                              method="post"
+                              class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
                 </td>
             </tr>
         }

@@ -12,12 +12,12 @@ namespace ToDooly.Controllers
     [Authorize]
     public class ProjectsController : Controller
     {
-        private readonly ApplicationDbContext _db;
+        private readonly ApplicationDbContext _context;
         private readonly UserManager<IdentityUser> _um;
 
         public ProjectsController(ApplicationDbContext db, UserManager<IdentityUser> um)
         {
-            _db = db;
+            _context = db;
             _um = um;
         }
 
@@ -25,24 +25,30 @@ namespace ToDooly.Controllers
         public async Task<IActionResult> Index()
         {
             var uid = _um.GetUserId(User);
-            var projects = await _db.Projects
+            var projects = await _context.Projects
                                     .Where(p => p.OwnerId == uid)
                                     .ToListAsync();
             return View(projects);
         }
 
         // GET: /Projects/Details/5
+        // GET: /Projects/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null) return NotFound();
 
             var uid = _um.GetUserId(User);
-            var project = await _db.Projects
-                .Include(p => p.Tasks)                            
-                .Where(p => p.Id == id && p.OwnerId == uid)       
+            var project = await _context.Projects
+                .Include(p => p.Tasks)
+                    .ThenInclude(t => t.TaskLabels)
+                        .ThenInclude(tl => tl.Label)
+                .Where(p => p.Id == id && p.OwnerId == uid)   
                 .FirstOrDefaultAsync();
 
             if (project == null) return NotFound();
+
+            var owner = await _um.FindByIdAsync(project.OwnerId);
+            ViewBag.OwnerName = owner?.UserName ?? "(unknown)";
             return View(project);
         }
 
@@ -59,8 +65,8 @@ namespace ToDooly.Controllers
 
             // set to the currently‐logged‐in user
             project.OwnerId = _um.GetUserId(User);
-            _db.Projects.Add(project);
-            await _db.SaveChangesAsync();
+            _context.Projects.Add(project);
+            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
@@ -70,7 +76,7 @@ namespace ToDooly.Controllers
             if (id == null) return NotFound();
 
             var uid = _um.GetUserId(User);
-            var project = await _db.Projects
+            var project = await _context.Projects
                                    .FirstOrDefaultAsync(p => p.Id == id && p.OwnerId == uid);
             if (project == null) return NotFound();
 
@@ -86,13 +92,13 @@ namespace ToDooly.Controllers
             if (!ModelState.IsValid) return View(updated);
 
             var uid = _um.GetUserId(User);
-            var project = await _db.Projects
+            var project = await _context.Projects
                                    .FirstOrDefaultAsync(p => p.Id == id && p.OwnerId == uid);
             if (project == null) return NotFound();
 
             project.Title = updated.Title;
             project.Description = updated.Description;
-            await _db.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
@@ -102,7 +108,7 @@ namespace ToDooly.Controllers
             if (id == null) return NotFound();
 
             var uid = _um.GetUserId(User);
-            var project = await _db.Projects
+            var project = await _context.Projects
                 .Include(p => p.Tasks)
                 .FirstOrDefaultAsync(p => p.Id == id && p.OwnerId == uid);
 
@@ -120,17 +126,17 @@ namespace ToDooly.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var uid = _um.GetUserId(User);
-            var project = await _db.Projects
+            var project = await _context.Projects
                 .Include(p => p.Tasks)
                 .FirstOrDefaultAsync(p => p.Id == id && p.OwnerId == uid);
 
             if (project != null)
             {
                 // If you don't have cascade‐delete on Tasks, remove them manually:
-                _db.TaskItems.RemoveRange(project.Tasks);
+                _context.TaskItems.RemoveRange(project.Tasks);
 
-                _db.Projects.Remove(project);
-                await _db.SaveChangesAsync();
+                _context.Projects.Remove(project);
+                await _context.SaveChangesAsync();
             }
             return RedirectToAction(nameof(Index));
         }
@@ -140,23 +146,26 @@ namespace ToDooly.Controllers
         public async Task<PartialViewResult> TaskList(int projectId)
         {
             var uid = _um.GetUserId(User);
-            var tasks = await _db.TaskItems
-                .Where(t => t.ProjectId == projectId
-                         && t.Project.OwnerId == uid
-                         && !t.IsComplete)    // <-- filter INCOMPLETE only
-                .ToListAsync();
+            var tasks = await _context.TaskItems
+                                 .Where(t => t.ProjectId == projectId
+                                             && t.Project.OwnerId == uid
+                                             && !t.IsComplete)
+                                 .Include(t => t.TaskLabels)
+                                   .ThenInclude(tl => tl.Label)
+                                 .ToListAsync();
             return PartialView("_TaskList", tasks);
         }
-
         [HttpGet]
         public async Task<PartialViewResult> CompletedTaskList(int projectId)
         {
             var uid = _um.GetUserId(User);
-            var tasks = await _db.TaskItems
-                .Where(t => t.ProjectId == projectId
-                         && t.Project.OwnerId == uid
-                         && t.IsComplete)     // <-- filter COMPLETE only
-                .ToListAsync();
+            var tasks = await _context.TaskItems
+                                 .Where(t => t.ProjectId == projectId
+                                             && t.Project.OwnerId == uid
+                                             && t.IsComplete)
+                                 .Include(t => t.TaskLabels)
+                                   .ThenInclude(tl => tl.Label)
+                                 .ToListAsync();
             return PartialView("_CompletedTaskList", tasks);
         }
     }
