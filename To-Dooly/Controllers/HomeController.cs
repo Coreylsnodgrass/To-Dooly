@@ -7,8 +7,6 @@ namespace ToDooly.Controllers
         // GET: /
         public IActionResult Index()
         {
-            // You can redirect to Dashboard if you don't want a separate home page
-            // return RedirectToAction("Index", "Dashboard");
             return View();
         }
 

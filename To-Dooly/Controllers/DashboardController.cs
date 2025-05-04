@@ -1,6 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ToDooly.Models.ViewModels;
 using ToDooly.Services;
 
 namespace ToDooly.Controllers
@@ -8,25 +12,42 @@ namespace ToDooly.Controllers
     [Authorize]
     public class DashboardController : Controller
     {
-        private readonly ApplicationDbContext _context;
-        public DashboardController(ApplicationDbContext db) => _context = db;
+        private readonly ApplicationDbContext _db;
+        private readonly UserManager<IdentityUser> _um;
+
+        public DashboardController(
+            ApplicationDbContext db,
+            UserManager<IdentityUser> um)
+        {
+            _db = db;
+            _um = um;
+        }
 
         public async Task<IActionResult> Index()
         {
-            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier).Value;
-            var tasks = _context.TaskItems.Where(t => t.Project.OwnerId == userId);
-            var total = await tasks.CountAsync();
-            var completed = await tasks.CountAsync(t => t.IsComplete);
-            var dueSoon = await tasks
-                .Where(t => !t.IsComplete && t.DueDate <= DateTime.Today.AddDays(3))
-                .OrderBy(t => t.DueDate).Take(5).ToListAsync();
+            var uid = _um.GetUserId(User);
 
-            ViewData["Total"] = total;
-            ViewData["Completed"] = completed;
-            ViewData["DueSoon"] = dueSoon;
+            var totalProjects = await _db.Projects
+                                         .CountAsync(p => p.OwnerId == uid);
 
-            // build weekly chart data…
-            return View();
+            var totalTasks = await _db.TaskItems
+                                         .Include(t => t.Project)
+                                         .Where(t => t.Project.OwnerId == uid)
+                                         .CountAsync();
+
+            var completedTasks = await _db.TaskItems
+                                         .Include(t => t.Project)
+                                         .Where(t => t.Project.OwnerId == uid && t.IsComplete)
+                                         .CountAsync();
+
+            var vm = new DashboardViewModel
+            {
+                TotalProjects = totalProjects,
+                TotalTasks = totalTasks,
+                CompletedTasks = completedTasks
+            };
+
+            return View(vm);
         }
     }
 }

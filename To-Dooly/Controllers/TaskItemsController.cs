@@ -25,9 +25,6 @@ namespace ToDooly.Controllers
             _um = um;
         }
 
-        // ──────────────────────────────────────────────────────────────────────
-        // LIST  ( /TaskItems?projectId=# )
-        // ──────────────────────────────────────────────────────────────────────
         public async Task<IActionResult> Index(int? projectId)
         {
             var uid = _um.GetUserId(User);
@@ -43,9 +40,6 @@ namespace ToDooly.Controllers
             return View(await query.ToListAsync());
         }
 
-        // ──────────────────────────────────────────────────────────────────────
-        // CREATE  (GET + POST)
-        // ──────────────────────────────────────────────────────────────────────
         public async Task<IActionResult> Create(int projectId)
         {
             var uid = _um.GetUserId(User);
@@ -96,9 +90,6 @@ namespace ToDooly.Controllers
             return RedirectToAction("Details", "Projects", new { id = vm.ProjectId });
         }
 
-        // ──────────────────────────────────────────────────────────────────────
-        // EDIT  (GET)
-        // ──────────────────────────────────────────────────────────────────────
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -129,9 +120,6 @@ namespace ToDooly.Controllers
             return View(vm);
         }
 
-        // ──────────────────────────────────────────────────────────────────────
-        // EDIT  (POST)
-        // ──────────────────────────────────────────────────────────────────────
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(TaskItemEditViewModel vm)
         {
@@ -170,9 +158,6 @@ namespace ToDooly.Controllers
             return RedirectToAction("Details", "Projects", new { id = task.ProjectId });
         }
 
-        // ──────────────────────────────────────────────────────────────────────
-        // DELETE  (POST – from stand‑alone TaskItems list)
-        // ──────────────────────────────────────────────────────────────────────
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)

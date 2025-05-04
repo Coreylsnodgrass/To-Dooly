@@ -1,4 +1,4 @@
-﻿// wwwroot/js/todooly.js
+﻿
 
 document.addEventListener("DOMContentLoaded", () => {
   const inContainer   = document.getElementById("task-list-container");
@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   document.body.addEventListener("click", async e => {
-    // Toggle complete
+   
     if (e.target.matches(".toggle-complete")) {
       const tr = e.target.closest("tr");
       const id = tr.dataset.taskId;

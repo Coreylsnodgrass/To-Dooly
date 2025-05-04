@@ -13,7 +13,6 @@ namespace ToDooly.Controllers.Api
     [Authorize]
     public class ProjectsApiController : ControllerBase
     {
-        // use auto-properties instead of private fields
         public ApplicationDbContext Db { get; }
         public UserManager<IdentityUser> UserManager { get; }
 

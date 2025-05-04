@@ -12,7 +12,6 @@ namespace ToDooly.Models.Entities
 
         public string? Description { get; set; }
 
-        // remove `required`, give a default
         public string OwnerId { get; set; } = string.Empty;
 
         public List<TaskItem> Tasks { get; set; } = new();

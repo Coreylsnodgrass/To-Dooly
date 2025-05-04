@@ -21,10 +21,10 @@ namespace ToDooly.Models.Entities
 
         public int ProjectId { get; set; }
 
-        [JsonIgnore]                    // ← Ignore in JSON
+        [JsonIgnore]                    
         public Project Project { get; set; } = null!;
 
-        [JsonIgnore]                    // ← Ignore in JSON
+        [JsonIgnore]                    
         public List<TaskLabel> TaskLabels { get; set; } = new();
     }
 }
