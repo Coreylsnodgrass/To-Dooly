@@ -1,0 +1,28 @@
+﻿@model IEnumerable<ToDooly.Models.Entities.TaskItem>
+
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Title</th>
+            <th>Due Date</th>
+            <th>Priority</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var task in Model)
+        {
+            <tr data-task-id="@task.Id">
+                <td>
+                    <input type="checkbox"
+                           class="toggle-complete"
+                    @(task.IsComplete ? "checked" : "") />
+                </td>
+                <td>@task.Title</td>
+                <td>@task.DueDate:yyyy-MM-dd</td>
+                <td>@task.Priority</td>
+            </tr>
+        }
+    </tbody>
+</table>
+<span id="toggle-error" class="text-danger"></span>

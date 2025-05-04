@@ -29,6 +29,14 @@
             @Html.DisplayFor(model => model.OwnerId)
         </dd>
     </dl>
+    <h3>Tasks</h3>
+    <div id="task-form-container">
+        @Html.Partial("_CreateTask", new ToDooly.Models.Entities.TaskItem { ProjectId = Model.Id })
+    </div>
+    <div id="task-list-container">
+        @Html.Partial("_TaskList", Model.Tasks)
+    </div>
+
 </div>
 <div>
     <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
