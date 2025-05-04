@@ -1,157 +1,138 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using ToDooly.Models.Entities;
 using ToDooly.Services;
 
 namespace ToDooly.Controllers
 {
+    [Authorize]
     public class ProjectsController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ApplicationDbContext _db;
+        private readonly UserManager<IdentityUser> _um;
 
-        public ProjectsController(ApplicationDbContext context)
+        public ProjectsController(ApplicationDbContext db, UserManager<IdentityUser> um)
         {
-            _context = context;
+            _db = db;
+            _um = um;
         }
 
-        // GET: Projects
+        // GET: /Projects
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Projects.ToListAsync());
+            var uid = _um.GetUserId(User);
+            var projects = await _db.Projects
+                                    .Where(p => p.OwnerId == uid)
+                                    .ToListAsync();
+            return View(projects);
         }
 
-        // GET: Projects/Details/5
+        // GET: /Projects/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
-            var project = await _context.Projects
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (project == null)
-            {
-                return NotFound();
-            }
+            var uid = _um.GetUserId(User);
+            var project = await _db.Projects
+                                   .FirstOrDefaultAsync(p => p.Id == id && p.OwnerId == uid);
+            if (project == null) return NotFound();
 
             return View(project);
         }
 
-        // GET: Projects/Create
-        public IActionResult Create()
-        {
-            return View();
-        }
+        // GET: /Projects/Create
+        public IActionResult Create() => View();
 
-        // POST: Projects/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        // POST: /Projects/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Title,Description,OwnerId")] Project project)
+        public async Task<IActionResult> Create([Bind("Title,Description")] Project project)
         {
-            if (ModelState.IsValid)
-            {
-                _context.Add(project);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            return View(project);
+            if (!ModelState.IsValid) return View(project);
+
+            project.OwnerId = _um.GetUserId(User);
+            _db.Projects.Add(project);
+            await _db.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
         }
 
-        // GET: Projects/Edit/5
+        // GET: /Projects/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
-            var project = await _context.Projects.FindAsync(id);
-            if (project == null)
-            {
-                return NotFound();
-            }
+            var uid = _um.GetUserId(User);
+            var project = await _db.Projects
+                                   .FirstOrDefaultAsync(p => p.Id == id && p.OwnerId == uid);
+            if (project == null) return NotFound();
+
             return View(project);
         }
 
-        // POST: Projects/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        // POST: /Projects/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Description,OwnerId")] Project project)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Description")] Project updated)
         {
-            if (id != project.Id)
-            {
-                return NotFound();
-            }
+            if (id != updated.Id) return BadRequest();
+            if (!ModelState.IsValid) return View(updated);
 
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(project);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!ProjectExists(project.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            return View(project);
+            var uid = _um.GetUserId(User);
+            var project = await _db.Projects
+                                   .FirstOrDefaultAsync(p => p.Id == id && p.OwnerId == uid);
+            if (project == null) return NotFound();
+
+            project.Title = updated.Title;
+            project.Description = updated.Description;
+            _db.Projects.Update(project);
+            await _db.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Index));
         }
 
-        // GET: Projects/Delete/5
+        // GET: /Projects/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
-            var project = await _context.Projects
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (project == null)
-            {
-                return NotFound();
-            }
+            var uid = _um.GetUserId(User);
+            var project = await _db.Projects
+                                   .FirstOrDefaultAsync(p => p.Id == id && p.OwnerId == uid);
+            if (project == null) return NotFound();
 
             return View(project);
         }
 
-        // POST: Projects/Delete/5
+        // POST: /Projects/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var project = await _context.Projects.FindAsync(id);
+            var uid = _um.GetUserId(User);
+            var project = await _db.Projects
+                                   .FirstOrDefaultAsync(p => p.Id == id && p.OwnerId == uid);
             if (project != null)
             {
-                _context.Projects.Remove(project);
+                _db.Projects.Remove(project);
+                await _db.SaveChangesAsync();
             }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
-        private bool ProjectExists(int id)
+        // GET: /Projects/TaskList?projectId=5
+        [HttpGet]
+        public async Task<PartialViewResult> TaskList(int projectId)
         {
-            return _context.Projects.Any(e => e.Id == id);
+            var uid = _um.GetUserId(User);
+            var tasks = await _db.TaskItems
+                                 .Where(t => t.ProjectId == projectId
+                                          && t.Project.OwnerId == uid)
+                                 .ToListAsync();
+            return PartialView("_TaskList", tasks);
         }
     }
 }
