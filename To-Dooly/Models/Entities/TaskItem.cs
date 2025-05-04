@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace ToDooly.Models.Entities
 {
@@ -22,9 +21,10 @@ namespace ToDooly.Models.Entities
 
         public int ProjectId { get; set; }
 
-        // remove `required`
+        [JsonIgnore]                    // ← Ignore in JSON
         public Project Project { get; set; } = null!;
 
+        [JsonIgnore]                    // ← Ignore in JSON
         public List<TaskLabel> TaskLabels { get; set; } = new();
     }
 }

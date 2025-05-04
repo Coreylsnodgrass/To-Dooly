@@ -1,0 +1,26 @@
+﻿@model IEnumerable<ToDooly.Models.Entities.TaskItem>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Due Date</th>
+            <th>Priority</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var t in Model)
+        {
+            <tr data-task-id="@t.Id">
+                <td>@t.Title</td>
+                <td>@t.DueDate.ToString("yyyy-MM-dd")</td>
+                <td>@t.Priority</td>
+                <td>
+                    <button class="btn btn-sm btn-danger delete-task">Delete</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+<span id="delete-error" class="text-danger"></span>

@@ -5,11 +5,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ToDooly.Models.Entities;
+using ToDooly.Models.ViewModels;
 using ToDooly.Services;
 
 namespace ToDooly.Controllers.Api
 {
-    [Route("api/[controller]")]
+    [Route("api/tasks")]
     [ApiController]
     [Authorize]
     public class TasksApiController : ControllerBase
@@ -54,49 +55,42 @@ namespace ToDooly.Controllers.Api
 
         // POST: api/tasks
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] TaskItem model)
+        public async Task<IActionResult> Post([FromBody] CreateTaskDto dto)
         {
             var uid = _um.GetUserId(User);
             var project = await _db.Projects
-                                   .FirstOrDefaultAsync(p => p.Id == model.ProjectId && p.OwnerId == uid);
-            if (project == null) return BadRequest("Invalid project ID");
+                                   .FirstOrDefaultAsync(p => p.Id == dto.ProjectId && p.OwnerId == uid);
+            if (project == null)
+                return BadRequest("Invalid project ID");
 
-            model.IsComplete = false;
-            _db.TaskItems.Add(model);
+            var task = new TaskItem
+            {
+                ProjectId = dto.ProjectId,
+                Title = dto.Title,
+                Description = dto.Description,
+                DueDate = dto.DueDate,
+                Priority = dto.Priority,
+                IsComplete = false
+            };
+
+            _db.TaskItems.Add(task);
             await _db.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(Get), new { id = model.Id }, model);
+            return CreatedAtAction(nameof(Get), new { id = task.Id }, task);
         }
 
         // PUT: api/tasks/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] TaskItem updated)
+        public async Task<IActionResult> Put(int id, [FromBody] UpdateTaskStatusDto dto)
         {
-            if (id != updated.Id) return BadRequest();
-
             var uid = _um.GetUserId(User);
             var existing = await _db.TaskItems
                                     .Include(t => t.Project)
                                     .FirstOrDefaultAsync(t => t.Id == id && t.Project.OwnerId == uid);
             if (existing == null) return NotFound();
 
-            // Basic field updates
-            existing.Title = updated.Title;
-            existing.Description = updated.Description;
-            existing.DueDate = updated.DueDate;
-            existing.Priority = updated.Priority;
-            existing.IsComplete = updated.IsComplete;
+            existing.IsComplete = dto.IsComplete;
+            // keep existing.IsComplete unchanged here
 
-            // Optionally allow moving between projects you own
-            if (updated.ProjectId != existing.ProjectId)
-            {
-                var newProj = await _db.Projects
-                                       .FirstOrDefaultAsync(p => p.Id == updated.ProjectId && p.OwnerId == uid);
-                if (newProj == null) return BadRequest("Invalid new project ID");
-                existing.ProjectId = updated.ProjectId;
-            }
-
-            _db.TaskItems.Update(existing);
             await _db.SaveChangesAsync();
             return NoContent();
         }

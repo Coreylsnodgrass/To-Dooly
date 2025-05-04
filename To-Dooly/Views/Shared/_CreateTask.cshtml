@@ -1,0 +1,29 @@
+﻿@model ToDooly.Models.Entities.TaskItem
+
+<form id="create-task-form">
+    <input type="hidden" name="projectId" value="@Model.ProjectId" />
+
+    <div class="mb-2">
+        <label for="Title" class="form-label">Title</label>
+        <input name="title" id="Title" class="form-control" />
+        <span class="text-danger" id="val-Title"></span>
+    </div>
+
+    <div class="mb-2">
+        <label for="DueDate" class="form-label">Due Date</label>
+        <input name="dueDate" id="DueDate" type="date"
+               class="form-control"
+               value="@DateTime.Today:yyyy-MM-dd" />
+        <span class="text-danger" id="val-DueDate"></span>
+    </div>
+
+    <div class="mb-2">
+        <label for="Priority" class="form-label">Priority</label>
+        <input name="priority" id="Priority" type="number" min="1" max="5"
+               class="form-control" />
+        <span class="text-danger" id="val-Priority"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save</button>
+    <span id="create-task-error" class="text-danger ms-2"></span>
+</form>
