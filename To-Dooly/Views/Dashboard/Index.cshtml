@@ -1,0 +1,50 @@
+﻿@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Projects</h5>
+                <p class="card-text display-6">@ViewBag.TotalProjects</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-secondary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Tasks</h5>
+                <p class="card-text display-6">@ViewBag.TotalTasks</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Completed Tasks</h5>
+                <p class="card-text display-6">@ViewBag.CompletedTasks</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<canvas id="weeklyChart" width="600" height="200"></canvas>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // You’ll populate labels & data from an API or inline JSON
+        const ctx = document.getElementById('weeklyChart');
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: [],
+            datasets: [{ label: 'Tasks Completed', data: [] }]
+          },
+          options: { scales: { y: { beginAtZero: true } } }
+        });
+    </script>
+}
