@@ -69,7 +69,7 @@ namespace ToDooly.Controllers.Api
                 Title = dto.Title,
                 Description = dto.Description,
                 DueDate = dto.DueDate,
-                Priority = dto.Priority,
+                Priority = (PriorityLevel)dto.Priority,
                 IsComplete = false
             };
 

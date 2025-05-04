@@ -32,7 +32,6 @@ namespace ToDooly.Controllers
         }
 
         // GET: /Projects/Details/5
-        // GET: /Projects/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null) return NotFound();
@@ -63,7 +62,7 @@ namespace ToDooly.Controllers
             if (!ModelState.IsValid)
                 return View(project);
 
-            // set to the currently‐logged‐in user
+            // set to the current User
             project.OwnerId = _um.GetUserId(User);
             _context.Projects.Add(project);
             await _context.SaveChangesAsync();

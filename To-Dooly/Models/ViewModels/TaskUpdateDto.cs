@@ -1,8 +1,10 @@
-﻿// Models/ViewModels/TaskUpdateDto.cs
+﻿using System.ComponentModel.DataAnnotations;
+
 namespace ToDooly.Models.ViewModels
 {
     public class TaskUpdateDto
     {
-        public bool IsComplete { get; set; }
+        [Required] public int Id { get; set; }
+        [Required] public bool IsComplete { get; set; }
     }
 }

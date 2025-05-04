@@ -1,11 +1,17 @@
-﻿namespace ToDooly.Models.ViewModels
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+
+namespace ToDooly.Models.ViewModels
 {
     public class CreateTaskDto
     {
-        public int ProjectId { get; set; }
-        public string Title { get; set; } = string.Empty;
+        [Required] public int ProjectId { get; set; }
+        [Required] public string Title { get; set; } = "";
         public string? Description { get; set; }
-        public DateTime DueDate { get; set; }
+        [Required] public DateTime DueDate { get; set; }
+
+
+        [Range(1, 5)]
         public int Priority { get; set; }
     }
 }

@@ -1,4 +1,6 @@
 ﻿@model ToDooly.Models.ViewModels.TaskItemEditViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using ToDooly.Models.Entities
 
 @{
     ViewData["Title"] = "Create Task";
@@ -13,41 +15,39 @@
 
     <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
-    <!-- Title -->
     <div class="mb-3">
         <label asp-for="Title" class="form-label"></label>
         <input asp-for="Title" class="form-control" />
         <span asp-validation-for="Title" class="text-danger"></span>
     </div>
 
-    <!-- Description -->
     <div class="mb-3">
         <label asp-for="Description" class="form-label"></label>
         <textarea asp-for="Description" class="form-control"></textarea>
         <span asp-validation-for="Description" class="text-danger"></span>
     </div>
 
-    <!-- DueDate -->
     <div class="mb-3">
         <label asp-for="DueDate" class="form-label"></label>
         <input asp-for="DueDate" type="date" class="form-control" />
         <span asp-validation-for="DueDate" class="text-danger"></span>
     </div>
 
-    <!-- Priority -->
     <div class="mb-3">
-        <label asp-for="Priority" class="form-label"></label>
-        <input asp-for="Priority" type="number" min="1" max="5" class="form-control" />
-        <span asp-validation-for="Priority" class="text-danger"></span>
+    <label asp-for="Priority" class="form-label"></label>
+    <select asp-for="Priority"
+            asp-items="Html.GetEnumSelectList<ToDooly.Models.Entities.PriorityLevel>()"
+            class="form-select">
+        <option value="">-- select priority --</option>
+    </select>
+    <span asp-validation-for="Priority" class="text-danger"></span>
     </div>
 
-    <!-- IsComplete (usually false on create, but included) -->
     <div class="form-check mb-3">
         <input asp-for="IsComplete" class="form-check-input" />
         <label asp-for="IsComplete" class="form-check-label"></label>
     </div>
 
-    <!-- Labels checkbox list -->
     <div class="mb-3">
         <label class="form-label">Labels</label>
         <div>
@@ -71,6 +71,7 @@
     </div>
 
     <button type="submit" class="btn btn-primary">Save</button>
+    
     <a asp-controller="Projects"
        asp-action="Details"
        asp-route-id="@Model.ProjectId"

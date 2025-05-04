@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;        
 using ToDooly.Models.Entities;
+using ToDooly.Models.ViewModels;
 using ToDooly.Services;
 
 [Authorize]
@@ -26,7 +27,40 @@ public class LabelsController : Controller
         var labels = await _db.Labels
                               .Where(l => l.OwnerId == uid)
                               .ToListAsync();
-        return View(labels);
+
+        var vm = new List<LabelViewModel>(labels.Count);
+        foreach (var l in labels)
+        {
+            // Lookup the user once per label
+            var user = await _um.FindByIdAsync(l.OwnerId);
+            vm.Add(new LabelViewModel
+            {
+                Id = l.Id,
+                Name = l.Name,
+                OwnerName = user?.UserName ?? user?.Email ?? "(unknown)"
+            });
+        }
+
+        return View(vm);
+    }
+
+    // GET: Labels/Details/5
+    public async Task<IActionResult> Details(int? id)
+    {
+        if (id == null) return NotFound();
+        var uid = _um.GetUserId(User);
+        var label = await _db.Labels.FirstOrDefaultAsync(l => l.Id == id && l.OwnerId == uid);
+        if (label == null) return NotFound();
+
+        // owner lookup
+        var user = await _um.FindByIdAsync(label.OwnerId);
+        var vm = new LabelViewModel
+        {
+            Id = label.Id,
+            Name = label.Name,
+            OwnerName = user?.UserName ?? user?.Email ?? "(unknown)"
+        };
+        return View(vm);
     }
 
     // GET: Labels/Create
@@ -92,7 +126,6 @@ public class LabelsController : Controller
                              .FirstOrDefaultAsync(l => l.Id == id && l.OwnerId == uid);
         if (label != null)
         {
-            // remove any TaskLabels first
             _db.TaskLabels.RemoveRange(label.TaskLabels);
             _db.Labels.Remove(label);
             await _db.SaveChangesAsync();

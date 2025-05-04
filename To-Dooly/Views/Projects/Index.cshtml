@@ -25,29 +25,31 @@
                 <td>@item.Title</td>
                 <td>@item.Description</td>
                 <td>
-                    <div class="btn-group" role="group">
-                        <a asp-controller="Projects"
-                           asp-action="Details"
-                           asp-route-id="@item.Id"
-                           class="btn btn-sm btn-primary">
-                            Tasks
-                        </a>
-                        <a asp-action="Edit"
-                           asp-route-id="@item.Id"
-                           class="btn btn-sm btn-secondary">
-                            Edit
-                        </a>
-                        <form asp-action="Delete"
-                              asp-route-id="@item.Id"
-                              method="post"
-                              class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-danger">
-                                Delete
-                            </button>
-                        </form>
-                    </div>
+                    <a asp-action="Details"
+                       asp-controller="Projects"
+                       asp-route-id="@item.Id"
+                       class="btn btn-sm btn-info">
+                        Tasks
+                    </a>
+                    |
+                    <a asp-action="Edit"
+                       asp-controller="Projects"
+                       asp-route-id="@item.Id"
+                       class="btn btn-sm btn-secondary">
+                        Edit Project Details
+                    </a>
+                    |
+
+                    <form asp-action="Delete"
+                          asp-controller="Projects"
+                          asp-route-id="@item.Id"
+                          method="post"
+                          class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-danger">Delete Project</button>
+                    </form>
                 </td>
             </tr>
         }
+
     </tbody>
 </table>
